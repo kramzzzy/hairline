@@ -76,6 +76,20 @@ test.describe("read.mjs", () => {
     expect(readFileSync(join(cwd, "hairline-moved-source.txt"), "utf8")).toMatch(/^#1 {2}rect {4}g#moved {3}box 20\.\.30 × 40\.\.50 /m);
   });
 
+  test("measures a shape inside a nested <svg> where it is drawn", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "hl-read-"));
+    const run = await read(cwd, { HAIRLINE_LOOK_CACHE: cache }, FIX + "nested.svg");
+    expect(run.code, run.out).toBe(0);
+    expect(readFileSync(join(cwd, "hairline-nested-source.txt"), "utf8")).toMatch(/^#2 {2}rect {4}- {9}box 0\.\.12 × 0\.\.12 /m);
+  });
+
+  test("never runs the SVG's scripts: the card is of the drawing as written", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "hl-read-"));
+    const run = await read(cwd, { HAIRLINE_LOOK_CACHE: cache }, FIX + "scripted.svg");
+    expect(run.code, run.out).toBe(0);
+    expect(readFileSync(join(cwd, "hairline-scripted-source.txt"), "utf8")).toMatch(/^#1 {2}rect {4}- {9}box 10\.\.90 × 10\.\.90 /m);
+  });
+
   test("without a browser, writes the reduced card, no picture, and exits 0", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "hl-read-"));
     /* an empty cache, no npm on the PATH and no NODE_PATH (pnpm sets one): playwright-core cannot be had */

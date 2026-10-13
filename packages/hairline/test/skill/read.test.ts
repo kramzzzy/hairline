@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { expect, it } from "vitest";
-import { card, nameFor, relate, scan } from "../../../../skills/hairline-create/read.mjs";
+import { card, nameFor, page, relate, scan } from "../../../../skills/hairline-create/read.mjs";
 
 const FIX = fileURLToPath(new URL("./fixtures/", import.meta.url));
 const svg = (f: string) => readFileSync(FIX + f, "utf8");
@@ -99,4 +99,29 @@ it("writes the full card with one line per shape, small shapes counted, and 30 l
   const long = card(info, many).split("\n");
   expect(long.length).toBeLessThanOrEqual(30);
   expect(long.at(-1)).toMatch(/^and \d+ more shapes$/);
+});
+
+/** Findings of the final review: each pins one failure on a real SVG. */
+it("keeps the not-read line on a busy card, under the 30 lines", () => {
+  const info = { ...scan(svg("rocket.svg"), "rocket.svg"), notRead: { text: 1 } };
+  const rects = Array.from({ length: 30 }, (_, k) => ({ i: k + 1, type: "rect", group: null, box: { x: k * 3, y: 0, w: 2, h: 40 }, filled: true, stroke: null, closed: true, kind: "lines" }));
+  const speck = { ...rects[0], i: 31, box: { x: 0, y: 0, w: 0.1, h: 0.1 } };
+  const lines = card(info, [...rects, speck]).split("\n");
+  expect(lines.length).toBeLessThanOrEqual(30);
+  expect(lines).toContain("not read: 1 <text>");
+  expect(lines).toContain("and 1 small shape");
+});
+
+it("takes width and height in px or absolute units, and refuses % and font units", () => {
+  const root = (w: string, h: string) => `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="1" height="1"/></svg>`;
+  expect(scan(root("24px", "12px"), "a.svg").viewBox).toEqual([0, 0, 24, 12]);
+  expect(scan(root("1in", "0.5in"), "a.svg").viewBox).toEqual([0, 0, 96, 48]);
+  expect(scan(root("100%", "100%"), "a.svg")).toEqual({ error: "a.svg has no viewBox, and its width and height are in %: the card cannot be measured" });
+  expect(scan(root("2em", "2em"), "a.svg")).toEqual({ error: "a.svg has no viewBox, and its width and height are in em: the card cannot be measured" });
+});
+
+it("drops a DOCTYPE with an internal subset whole, so nothing of it lands in the picture", () => {
+  const html = page(svg("illustrator.svg"), [0, 0, 100, 100]);
+  expect(html).not.toContain("]>");
+  expect(html).not.toContain("ENTITY");
 });

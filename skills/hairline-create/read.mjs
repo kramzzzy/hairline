@@ -23,8 +23,8 @@ const USAGE = "usage: node read.mjs <file.svg> [--name <name>]";
 /* look.mjs imports this file while it runs, so this file takes look.mjs only inside read(), and compares paths itself */
 const same = (a, b, platform = process.platform) => platform === "win32" ? a.toLowerCase() === b.toLowerCase() : a === b;
 
-/** The card lists this many shapes at most; the rest are counted on its last line. */
-const LISTED = 24;
+/** The card lists this many shapes at most, so that with the more, small and not-read lines it stays within 30. */
+const LISTED = 23;
 /** A shape smaller than this share of the ink's box, both ways, is counted, not listed. */
 const SMALL = 0.02;
 /** Boxes this close, as a share of the ink's size, touch; a mirror matches within it too. */
@@ -60,8 +60,15 @@ function tags(xml) {
   return out;
 }
 
-/** A length attribute as a number, units dropped; null when it is not one. */
-const len = (v) => (v === undefined ? null : Number.isFinite(parseFloat(v)) ? parseFloat(v) : null);
+/** CSS pixels per unit, for the absolute units a width or height can carry. */
+const PX = { "": 1, px: 1, in: 96, cm: 96 / 2.54, mm: 96 / 25.4, pt: 4 / 3, pc: 16 };
+/** A length attribute: its value in px, or its unit when it is relative (%, em, ex…), or null when it is not one. */
+const len = (v) => {
+  const m = /^\s*([+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)\s*([a-z%]*)\s*$/i.exec(v ?? "");
+  if (!m) return null;
+  const unit = m[2].toLowerCase();
+  return unit in PX ? Number(m[1]) * PX[unit] : unit;
+};
 
 /** What the XML alone says of the SVG. An object with `error` when it cannot be read as one. */
 export function scan(xml, fileName) {
@@ -72,6 +79,8 @@ export function scan(xml, fileName) {
   let synthesised = false;
   if (viewBox.length !== 4 || !viewBox.every(Number.isFinite) || !(viewBox[2] > 0 && viewBox[3] > 0)) {
     const w = len(root.attrs.width), h = len(root.attrs.height);
+    const relative = [w, h].find((v) => typeof v === "string");
+    if (relative) return { error: `${fileName} has no viewBox, and its width and height are in ${relative}: the card cannot be measured` };
     if (!(w > 0) || !(h > 0)) return { error: `${fileName} has no viewBox and no width and height: the card cannot be measured` };
     viewBox = [0, 0, w, h];
     synthesised = true;
@@ -180,7 +189,7 @@ export function card(info, shapes = null) {
 
 /** The page the picture is taken of: the SVG at 400 × 400 on white, kept whole inside the box. */
 export function page(xml, viewBox) {
-  const svg = xml.replace(/<\?xml[\s\S]*?\?>|<!DOCTYPE[\s\S]*?>/gi, "").replace(/<svg\b([^>]*)>/, (m, attrs) => {
+  const svg = xml.replace(/<\?xml[\s\S]*?\?>|<!DOCTYPE[^[>]*(?:\[[\s\S]*?\])?\s*>/gi, "").replace(/<svg\b([^>]*)>/, (m, attrs) => {
     const kept = attrs.replace(/\s(width|height|viewBox|preserveAspectRatio)\s*=\s*(?:"[^"]*"|'[^']*')/g, "");
     return `<svg${kept} viewBox="${viewBox.join(" ")}" width="400" height="400" preserveAspectRatio="xMidYMid meet">`;
   });
@@ -190,7 +199,8 @@ export function page(xml, viewBox) {
 /* Measured in the page: every painted shape in paint order, its box in the root's viewBox units with every transform applied. A <use> that points inside the file is one shape, by what it draws. */
 const MEASURE = () => {
   const root = document.querySelector("#box > svg");
-  const toRoot = root.getCTM().inverse();
+  /* screen CTMs, not getCTM(): getCTM() stops at the nearest viewport, which inside a nested <svg> is not the root */
+  const toRoot = root.getScreenCTM().inverse();
   const hidden = "defs, symbol, clipPath, mask, pattern, marker";
   const els = [...root.querySelectorAll("path, rect, circle, ellipse, line, polyline, polygon, use")].filter((el) => !el.parentElement.closest(hidden));
   const list = [];
@@ -199,7 +209,7 @@ const MEASURE = () => {
     let b;
     try { b = el.getBBox(); } catch { continue; }
     if (!(b.width > 0 || b.height > 0)) continue;
-    const m = toRoot.multiply(el.getCTM());
+    const m = toRoot.multiply(el.getScreenCTM());
     const pts = [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]].map(([x, y]) => new DOMPoint(x, y).matrixTransform(m));
     const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
     const x = Math.min(...xs), y = Math.min(...ys);
@@ -224,9 +234,9 @@ const MEASURE = () => {
   return list;
 };
 
-/** The picture and the shapes, from a fresh context of a browser the caller owns. */
+/** The picture and the shapes, from a fresh context of a browser the caller owns. The SVG's scripts never run and nothing is fetched: a file from anywhere is drawn as written. */
 export async function snapshot(browser, xml, viewBox) {
-  const context = await browser.newContext({ viewport: { width: 400, height: 400 }, deviceScaleFactor: 2, colorScheme: "light" });
+  const context = await browser.newContext({ viewport: { width: 400, height: 400 }, deviceScaleFactor: 2, colorScheme: "light", javaScriptEnabled: false, offline: true });
   try {
     const p = await context.newPage();
     await p.setContent(page(xml, viewBox));
@@ -260,6 +270,10 @@ export async function read(src, given = {}, cwd = process.cwd()) {
       writeFileSync(png, Buffer.from(b64, "base64"));
       text = card(info, shapes);
       console.log(`picture ${png}`);
+    } catch (e) {
+      /* the browser started but could not draw this file: the reduced card is still a reading */
+      text = card(info);
+      console.log(`no picture: the browser could not draw it: ${e.message.split("\n")[0]}. The card is reduced to what the XML says.`);
     } finally {
       await browser.close();
     }
