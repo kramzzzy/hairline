@@ -13,7 +13,14 @@
  * the XML says, and no picture is written. The SVG gives the identity, not
  * the paths: nothing here is traced.
  */
-import { basename } from "node:path";
+import { readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { basename, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { parseArgs } from "node:util";
+import { cacheDir, launch, playwright, same } from "./look.mjs";
+
+const here = (p) => fileURLToPath(new URL(p, import.meta.url));
+const USAGE = "usage: node read.mjs <file.svg> [--name <name>]";
 
 /** The card lists this many shapes at most; the rest are counted on its last line. */
 const LISTED = 24;
@@ -160,4 +167,109 @@ export function card(info, shapes = null) {
   if (small.length) lines.push(`and ${plural(small.length, "small shape")}`);
   if (unread.length) lines.push(`not read: ${unread.join(", ")}`);
   return lines.slice(0, 30).join("\n");
+}
+
+/** The page the picture is taken of: the SVG at 400 × 400 on white, kept whole inside the box. */
+export function page(xml, viewBox) {
+  const svg = xml.replace(/<\?xml[\s\S]*?\?>|<!DOCTYPE[\s\S]*?>/gi, "").replace(/<svg\b([^>]*)>/, (m, attrs) => {
+    const kept = attrs.replace(/\s(width|height|viewBox|preserveAspectRatio)\s*=\s*(?:"[^"]*"|'[^']*')/g, "");
+    return `<svg${kept} viewBox="${viewBox.join(" ")}" width="400" height="400" preserveAspectRatio="xMidYMid meet">`;
+  });
+  return `<!doctype html><meta charset="utf-8"><style>html,body{margin:0;background:#fff}#box{width:400px;height:400px;color:#18181b}#box>svg{display:block}</style><div id="box">${svg}</div>`;
+}
+
+/* Measured in the page: every painted shape in paint order, its box in the root's viewBox units with every transform applied. A <use> that points inside the file is one shape, by what it draws. */
+const MEASURE = () => {
+  const root = document.querySelector("#box > svg");
+  const toRoot = root.getCTM().inverse();
+  const hidden = "defs, symbol, clipPath, mask, pattern, marker";
+  const els = [...root.querySelectorAll("path, rect, circle, ellipse, line, polyline, polygon, use")].filter((el) => !el.parentElement.closest(hidden));
+  const list = [];
+  for (const el of els) {
+    if (el.tagName === "use" && !(el.getAttribute("href") ?? el.getAttribute("xlink:href") ?? "").startsWith("#")) continue;
+    let b;
+    try { b = el.getBBox(); } catch { continue; }
+    if (!(b.width > 0 || b.height > 0)) continue;
+    const m = toRoot.multiply(el.getCTM());
+    const pts = [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]].map(([x, y]) => new DOMPoint(x, y).matrixTransform(m));
+    const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
+    const x = Math.min(...xs), y = Math.min(...ys);
+    const cs = getComputedStyle(el);
+    const d = el.getAttribute("d") ?? "";
+    const tag = el.tagName;
+    const kind = tag === "path"
+      ? [/[CcSsQqTtAa]/.test(d) && "curves", /[LlHhVv]/.test(d) && "lines"].filter(Boolean).join(" and ")
+      : ["circle", "ellipse"].includes(tag) ? "curves"
+      : tag === "rect" && Number(el.getAttribute("rx") || el.getAttribute("ry") || 0) > 0 ? "curves and lines"
+      : tag === "use" ? "" : "lines";
+    const closed = tag === "path" ? /[Zz]/.test(d) : !["line", "polyline"].includes(tag);
+    const sw = parseFloat(cs.strokeWidth);
+    list.push({
+      i: list.length + 1, type: tag, group: el.parentElement.closest("g[id]")?.id ?? null,
+      box: { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y },
+      filled: cs.fill !== "none" && parseFloat(cs.fillOpacity) !== 0,
+      stroke: cs.stroke !== "none" && sw > 0 ? sw : null,
+      closed, kind,
+    });
+  }
+  return list;
+};
+
+/** The picture and the shapes, from a fresh context of a browser the caller owns. */
+export async function snapshot(browser, xml, viewBox) {
+  const context = await browser.newContext({ viewport: { width: 400, height: 400 }, deviceScaleFactor: 2, colorScheme: "light" });
+  try {
+    const p = await context.newPage();
+    await p.setContent(page(xml, viewBox));
+    const shapes = await p.evaluate(MEASURE);
+    const png = (await p.screenshot({ clip: { x: 0, y: 0, width: 400, height: 400 } })).toString("base64");
+    return { png, shapes };
+  } finally {
+    await context.close();
+  }
+}
+
+/** The reading of one SVG. Prints as it goes and returns the exit code. */
+export async function read(src, given = {}, cwd = process.cwd()) {
+  let xml;
+  try { xml = readFileSync(src, "utf8"); } catch { console.error(`read: cannot read ${resolve(src)}`); return 2; }
+  const info = scan(xml, basename(src));
+  if (info.error) { console.error(`read: ${info.error}`); return 2; }
+  const name = nameFor(src, given.name ?? null);
+  const txt = join(cwd, `hairline-${name}-source.txt`), png = join(cwd, `hairline-${name}-source.png`);
+
+  let browser = null, why = "";
+  try { browser = await launch(playwright(cacheDir())); } catch (e) { why = e.message.split("\n")[0]; }
+  let text;
+  if (!browser) {
+    text = card(info);
+    console.log(`no browser: ${why || "neither Chrome nor Playwright's Chromium would start"}. The card is reduced to what the XML says, and no picture was taken.`);
+  } else {
+    try {
+      const { png: b64, shapes } = await snapshot(browser, xml, info.viewBox);
+      writeFileSync(png, Buffer.from(b64, "base64"));
+      text = card(info, shapes);
+      console.log(`picture ${png}`);
+    } finally {
+      await browser.close();
+    }
+  }
+  writeFileSync(txt, text + "\n");
+  console.log(`card ${txt}`);
+  console.log(text);
+  return 0;
+}
+
+/* The skill is often installed as a symlink, so the path Node was given is resolved before it is compared. */
+if (process.argv[1] && same(realpathSync(process.argv[1]), realpathSync(here("./read.mjs")))) {
+  let args;
+  try {
+    args = parseArgs({ allowPositionals: true, options: { name: { type: "string" } } });
+  } catch (e) {
+    console.error(`${e.message}\n${USAGE}`);
+    process.exit(2);
+  }
+  const { positionals: [src], values } = args;
+  if (!src) { console.error(USAGE); process.exit(2); }
+  process.exit(await read(src, { name: values.name ?? null }));
 }
