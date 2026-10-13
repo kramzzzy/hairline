@@ -17,10 +17,11 @@ import { readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { cacheDir, launch, playwright, same } from "./look.mjs";
 
 const here = (p) => fileURLToPath(new URL(p, import.meta.url));
 const USAGE = "usage: node read.mjs <file.svg> [--name <name>]";
+/* look.mjs imports this file while it runs, so this file takes look.mjs only inside read(), and compares paths itself */
+const same = (a, b, platform = process.platform) => platform === "win32" ? a.toLowerCase() === b.toLowerCase() : a === b;
 
 /** The card lists this many shapes at most; the rest are counted on its last line. */
 const LISTED = 24;
@@ -238,6 +239,7 @@ export async function read(src, given = {}, cwd = process.cwd()) {
   const name = nameFor(src, given.name ?? null);
   const txt = join(cwd, `hairline-${name}-source.txt`), png = join(cwd, `hairline-${name}-source.png`);
 
+  const { cacheDir, launch, playwright } = await import("./look.mjs");
   let browser = null, why = "";
   try { browser = await launch(playwright(cacheDir())); } catch (e) { why = e.message.split("\n")[0]; }
   let text;

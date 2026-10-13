@@ -45,6 +45,30 @@ function declaring(keys: string) {
 test.describe("look.mjs", () => {
   test.setTimeout(60_000);
 
+  test("--source puts the SVG beside rest on the sheet, and says so", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "hl-look-"));
+    const svg = fileURLToPath(new URL("../skill/fixtures/rocket.svg", import.meta.url));
+    const plain = mkdtempSync(join(tmpdir(), "hl-look-"));
+    const [run, without] = await Promise.all([
+      look(cwd, `${SKILL}examples/terrain.js`, "--answer", "30,90,0", "--source", svg),
+      look(plain, `${SKILL}examples/terrain.js`, "--answer", "30,90,0"),
+    ]);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out).toMatch(/^source .*rocket\.svg is on the sheet beside rest: look\.md, item 14\.$/m);
+    wrote(cwd, "hairline-terrain-look.png");
+    /* the sheet with a source is taller than the one without: it has one more row */
+    const height = (dir: string) => readFileSync(join(dir, "hairline-terrain-look.png")).readUInt32BE(20);
+    expect(height(cwd)).toBeGreaterThan(height(plain) + 300);
+  });
+
+  test("--source that cannot be read stops before the browser, with exit 2", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "hl-look-"));
+    const run = await look(cwd, `${SKILL}examples/terrain.js`, "--source", join(cwd, "missing.svg"));
+    expect(run.code).toBe(2);
+    expect(run.out).toMatch(/^look: cannot read the source .*missing\.svg$/m);
+    expect(existsSync(join(cwd, "hairline-terrain.html"))).toBe(false);
+  });
+
   for (const [name, answer, read] of [["terrain", "30,90,0", "cell 2·6"], ["riffle", "42,28,52", "05"]]) {
     test(`passes ${name}, writes its sheet and prints the read-outs`, async () => {
       const cwd = mkdtempSync(join(tmpdir(), "hl-look-"));

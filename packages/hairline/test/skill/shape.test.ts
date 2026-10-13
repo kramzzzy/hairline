@@ -130,3 +130,10 @@ it("SKILL.md has a step 0 that reads an SVG the person brought, and source.md sa
   expect(source).toContain("the picture wins");
   expect(skill.split("\n").length).toBeLessThan(120);
 });
+
+it("look.md names --source and asks whether rest still reads as the source", () => {
+  const look = text("look.md");
+  expect(look).toContain("[--source <file.svg>]");
+  expect(look).toMatch(/^14\. \*\*Rest still reads as the source\.\*\*/m);
+  expect(look.split(/^14\. /m)[1].split("\n")[0]).toMatch(/`source\.md` said must survive/);
+});
