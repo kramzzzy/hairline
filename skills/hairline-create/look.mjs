@@ -106,7 +106,7 @@ export function point(s) {
 }
 
 /** playwright-core from the cache, installed there first when it is not. Throws with a reason when it cannot be had. */
-function playwright(dir) {
+export function playwright(dir) {
   const req = createRequire(join(dir, "look.cjs"));
   const has = () => { try { return req.resolve("playwright-core/package.json"); } catch { return null; } };
   if (!has()) {
@@ -119,6 +119,11 @@ function playwright(dir) {
     if (run.status !== 0 || !has()) throw new Error(why || "npm failed");
   }
   return { chromium: req("playwright-core").chromium, cli: join(dirname(has()), "cli.js") };
+}
+
+/** Starts the browser: the installed Chrome, or Playwright's own Chromium when there is none. Rejects when neither launches. */
+export function launch(pw) {
+  return pw.chromium.launch({ channel: "chrome" }).catch(() => pw.chromium.launch());
 }
 
 /*
@@ -271,7 +276,7 @@ export async function look(src, given0 = {}, cwd = process.cwd()) {
     console.error('Check the network and run this again, or look without a browser: look.md, "Without a browser".');
     return 2;
   }
-  const browser = await pw.chromium.launch({ channel: "chrome" }).catch(() => pw.chromium.launch()).catch(() => null);
+  const browser = await launch(pw).catch(() => null);
   if (!browser) {
     console.error(`look: no Chrome, and no Chromium of Playwright's. Install one once:\n  node "${pw.cli}" install chromium`);
     console.error('Then run this again. Without a browser, look.md says what to do: "Without a browser".');

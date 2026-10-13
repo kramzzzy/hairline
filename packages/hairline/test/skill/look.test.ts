@@ -30,3 +30,26 @@ it("by default reaches 600ms in sixteen frames, most of the way through the 700m
   expect(b).toHaveLength(16);
   expect(b.at(-1)).toBe(600);
 });
+
+/** launch: the browser order the look uses, shared with read.mjs. A fake Playwright records what it was asked for. */
+const fakePw = (chromeWorks: boolean) => {
+  const asked: unknown[] = [];
+  const chromium = {
+    launch: (o?: { channel?: string }) => {
+      asked.push(o ?? null);
+      return o?.channel && !chromeWorks ? Promise.reject(new Error("no chrome")) : Promise.resolve("browser");
+    },
+  };
+  return { pw: { chromium }, asked };
+};
+
+it("launch starts the installed Chrome first, then Playwright's Chromium", async () => {
+  const { launch, playwright } = await import("../../../../skills/hairline-create/look.mjs");
+  expect(typeof playwright).toBe("function");
+  const a = fakePw(true);
+  await expect(launch(a.pw)).resolves.toBe("browser");
+  expect(a.asked).toEqual([{ channel: "chrome" }]);
+  const b = fakePw(false);
+  await expect(launch(b.pw)).resolves.toBe("browser");
+  expect(b.asked).toEqual([{ channel: "chrome" }, null]);
+});
