@@ -35,7 +35,11 @@ const UNREAD = ["text", "image", "foreignObject"];
 /** Elements whose children are not painted where they stand. */
 const HIDDEN = ["defs", "symbol", "clipPath", "mask", "pattern", "marker"];
 
-/** A name build.mjs accepts: --name, else the file's, lowercased, runs of anything else as one hyphen, a digit first prefixed with x. */
+/**
+ * A name build.mjs accepts: --name, else the file's, lowercased, runs of anything else as one hyphen, a digit first prefixed with x.
+ * @param {string} file
+ * @param {string | null} [given]
+ */
 export function nameFor(file, given = null) {
   const raw = (given ?? basename(file).replace(/\.svg$/i, "")).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   return /^[a-z]/.test(raw) ? raw : `x${raw}`;
@@ -128,7 +132,11 @@ const ratio = (w, h) => (w >= h ? `${r1(w / h)}:1` : `1:${r1(h / w)}`);
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const pad = (s, n) => String(s).padEnd(n);
 
-/** The card. With `shapes` null it is the reduced card: what scan() read, and a line saying the rest was not taken. */
+/**
+ * The card. With `shapes` null it is the reduced card: what scan() read, and a line saying the rest was not taken.
+ * @param {any} info
+ * @param {any[] | null} [shapes]
+ */
 export function card(info, shapes = null) {
   const [vx, vy, vw, vh] = info.viewBox;
   const total = shapes ? shapes.length : Object.values(info.counts).reduce((a, b) => a + b, 0);
