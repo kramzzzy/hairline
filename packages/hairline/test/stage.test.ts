@@ -30,6 +30,24 @@ describe("register", () => {
     expect(pending()).toBe(0);
   });
 
+  it("hands each tick performance.now(), even when the frame's own time trails it, as in a frame that loaded late", () => {
+    const asked: Array<(t: number) => void> = [];
+    vi.stubGlobal("requestAnimationFrame", (fn: (t: number) => void) => asked.push(fn));
+    let clock = 5000;
+    vi.spyOn(performance, "now").mockImplementation(() => clock);
+    const seen: Array<[number, number]> = [], times: number[] = [];
+    const r = register(host(), (dt, now) => { seen.push([dt, now]); return true; });
+    for (let i = 0; i < 3; i++) {
+      clock += 1000 / 60;
+      times.push(clock);
+      // Chrome's frame time in a late frame: seconds behind performance.now()
+      asked.shift()!(clock - 4000);
+    }
+    expect(seen.slice(1).map(([, now]) => now)).toEqual(times);
+    for (const [dt] of seen.slice(1)) expect(dt).toBeCloseTo(1 / 60);
+    r.unregister();
+  });
+
   it("watches the stage until its last board leaves", () => {
     const el = host(), other = host();
     const keep = register(other, () => false);

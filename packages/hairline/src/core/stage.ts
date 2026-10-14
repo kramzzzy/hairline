@@ -96,7 +96,9 @@ let raf = 0, last = 0;
 let io: IntersectionObserver | null = null;
 let rm: MediaQueryList | null = null;
 
-function frame(now: number) {
+function frame() {
+  /* one clock for every figure: rAF's own timestamp can trail performance.now() by seconds in a frame that loaded late, and figures stamp events with performance.now() */
+  const now = performance.now();
   const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
   last = now;
   let any = false;
