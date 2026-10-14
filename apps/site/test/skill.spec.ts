@@ -11,6 +11,7 @@ const IDEAS = [
 const ADOPTED = [
   "deploy.svg the pointer's height is the thrust; raised high enough, the rocket lifts off",
   "firecrawl.svg the flame reads a page: point down it, and each part peels off onto a sheet of markdown",
+  "resend.svg the R is the sender: while the pointer is over it, a belt runs out of its block and each letter rides it into a tray",
   "linear.svg the stripes are lanes: point up across them, and the issues move lane to lane until they are done",
   "cursor.svg the mark is the caret over code: point down the page, and each suggested line is accepted",
 ];
@@ -52,7 +53,7 @@ const fit = (frame: FrameLocator) => frame.locator("main").evaluate((main) => ({
   band: window.innerHeight - main.getBoundingClientRect().bottom - 24,
 }));
 
-test("/skills opens with the install command, eight prompts and eight live figures, and a clean console", async ({ page }) => {
+test("/skills opens with the install command, nine prompts and nine live figures, and a clean console", async ({ page }) => {
   const noise = watch(page);
   await page.goto("/skills");
   await expect(page).toHaveTitle("Make your own figure · hairline");
@@ -278,6 +279,7 @@ const FOLLOW_UPS: Record<string, string | undefined> = {
   storm: "The cloud looks like a stack of cylinders. Make it read as a cloud at a glance.",
   "deploy-liftoff": undefined,
   "firecrawl-reader": undefined,
+  "resend-belt": undefined,
   "linear-cycle": undefined,
   "cursor-tab": undefined,
 };

@@ -148,7 +148,7 @@ export default function Skills() {
         </Section>
 
         <Section id="adopt-examples" title="What it made">
-          <p className="doc-p">Four SVGs, four files. The rocket was drawn for the demo; the other three are companies&rsquo; marks. Each page took a few rounds of changes after the first line. Move the pointer over one.</p>
+          <p className="doc-p">Five SVGs, five files. The rocket was drawn for the demo; the other four are companies&rsquo; marks. Each page took a few rounds of changes after the first line. Move the pointer over one.</p>
           {adopted.map((e) => <Example key={e.file} e={e} />)}
           <p className="doc-p">{NOTICE}</p>
         </Section>

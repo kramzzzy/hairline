@@ -68,7 +68,7 @@ export function llms(base: string): string {
     "", fence("sh", INSTALL),
     "", `Then type \`${COMMAND} <idea>\` in the agent. Four ideas, each with the page the skill wrote for it, and the change asked for next where there was one:`,
     "", EXAMPLES.map((e) => `- \`${COMMAND} ${e.idea}\`${e.followUp ? `, then "${e.followUp}"` : ""}: ${base}/skill/${e.file}`).join("\n"),
-    "", `Or start from an SVG you already have: type \`${ADOPT} <file.svg>\` and what the pointer should do. Four SVGs, each with the page it led to after a few rounds of changes:`,
+    "", `Or start from an SVG you already have: type \`${ADOPT} <file.svg>\` and what the pointer should do. Five SVGs, each with the page it led to after a few rounds of changes:`,
     "", ADOPTED.map((e) => `- \`${ADOPT} ${e.idea}\`: ${base}/skill/${e.file}`).join("\n"),
     "", NOTICE,
     "", `More: ${base}/skills`,

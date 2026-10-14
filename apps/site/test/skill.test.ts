@@ -72,8 +72,8 @@ describe("the skill's examples", () => {
 });
 
 describe("hairline-adopt's examples", () => {
-  it("are the rocket and three marks, each an SVG and then what the pointer does", () => {
-    expect(ADOPTED.map((e) => e.idea.split(" ")[0])).toEqual(["deploy.svg", "firecrawl.svg", "linear.svg", "cursor.svg"]);
+  it("are the rocket and four marks, each an SVG and then what the pointer does", () => {
+    expect(ADOPTED.map((e) => e.idea.split(" ")[0])).toEqual(["deploy.svg", "firecrawl.svg", "resend.svg", "linear.svg", "cursor.svg"]);
     for (const e of ADOPTED) expect(e.followUp).toBeUndefined();
   });
 

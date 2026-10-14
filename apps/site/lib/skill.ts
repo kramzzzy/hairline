@@ -44,6 +44,7 @@ export const MARKS: Example[] = [
 export const ADOPTED: Example[] = [
   { idea: "deploy.svg the pointer's height is the thrust; raised high enough, the rocket lifts off", file: "hairline-deploy-liftoff.html", sha256: "0b7392c2befd22bf553c6c08edb3b07f7945a3d01a1f3852011e309f2c4bca33" },
   { idea: "firecrawl.svg the flame reads a page: point down it, and each part peels off onto a sheet of markdown", file: "hairline-firecrawl-reader.html", sha256: "df47f616e57fbc9e2f5ab65acff68c28bbb87ac33c3a73bf4939d8c83245fd76" },
+  { idea: "resend.svg the R is the sender: while the pointer is over it, a belt runs out of its block and each letter rides it into a tray", file: "hairline-resend-belt.html", sha256: "c10a3ed6d38f2da2ffb50e4a22facd234cbcc3197ba3aa2eba041f47f3d46173" },
   { idea: "linear.svg the stripes are lanes: point up across them, and the issues move lane to lane until they are done", file: "hairline-linear-cycle.html", sha256: "2272ea7240311a7cf1ce9ff3c54d6a93d03cda4a41a1b3c85bceb5680ed99ba8" },
   { idea: "cursor.svg the mark is the caret over code: point down the page, and each suggested line is accepted", file: "hairline-cursor-tab.html", sha256: "1dcbfb43b851b95d7adb001fc14e5f40a688e058e761f6c1596c240ba137a073" },
 ];
