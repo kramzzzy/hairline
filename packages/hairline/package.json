@@ -1,6 +1,6 @@
 {
   "name": "@lucasmarkes/hairline",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Thirty-three isometric line figures that answer the pointer. For React and for anything with a DOM.",
   "license": "MIT",
   "type": "module",

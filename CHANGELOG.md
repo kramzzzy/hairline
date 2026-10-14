@@ -4,7 +4,7 @@ Every release of `@lucasmarkes/hairline`. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [semver](https://semver.org/).
 
-## Unreleased
+## 0.5.1 - 2026-10-14
 
 ### Added
 
