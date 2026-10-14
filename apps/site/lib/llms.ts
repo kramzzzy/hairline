@@ -1,7 +1,7 @@
 import { NOTICE } from "./catalogue";
 import { COUNT, FIGURES, INTENSITY, LINKS, OPTIONS, THEME, measure, type Row } from "./figures";
 import { CDN, EMPTY, PACKAGE, REACT, VANILLA, install } from "./snippets";
-import { COMMAND, EXAMPLES, INSTALL, SUMMARY } from "./skill";
+import { ADOPT, ADOPTED, COMMAND, EXAMPLES, INSTALL, SUMMARY } from "./skill";
 
 /** The page as plain text, for a model to read: the same data, the same copy. */
 
@@ -66,10 +66,12 @@ export function llms(base: string): string {
     "", "## Make your own", "",
     SUMMARY,
     "", fence("sh", INSTALL),
-    "", `Then type \`${COMMAND} <idea>\` in the agent. Seven ideas, each with the page the skill wrote for it, and the change asked for next where there was one:`,
+    "", `Then type \`${COMMAND} <idea>\` in the agent. Four ideas, each with the page the skill wrote for it, and the change asked for next where there was one:`,
     "", EXAMPLES.map((e) => `- \`${COMMAND} ${e.idea}\`${e.followUp ? `, then "${e.followUp}"` : ""}: ${base}/skill/${e.file}`).join("\n"),
+    "", `Or start from an SVG you already have: type \`${ADOPT} <file.svg>\` and what the pointer should do. Four SVGs, each with the page it led to after a few rounds of changes:`,
+    "", ADOPTED.map((e) => `- \`${ADOPT} ${e.idea}\`: ${base}/skill/${e.file}`).join("\n"),
     "", NOTICE,
-    "", `More: ${base}/skill`,
+    "", `More: ${base}/skills`,
     "", "## Links", "",
     `- Site: ${base}`, `- Source: ${LINKS.github}`, `- npm: ${LINKS.npm}`, `- The essay the figures come from: ${LINKS.essay}`, `- shadcn registry item: ${base}/r/hairline.json`, "",
   );

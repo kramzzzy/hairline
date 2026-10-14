@@ -152,7 +152,7 @@ With a drawing you already have, an icon or a logo as an SVG, `hairline-adopt` r
 /hairline-adopt icons/deploy.svg
 ```
 
-Four figures it drew, each beside its prompt: [hairline.lucasmarkes.com/skill](https://hairline.lucasmarkes.com/skill).
+What both skills drew, each beside its prompt: [hairline.lucasmarkes.com/skills](https://hairline.lucasmarkes.com/skills).
 
 ## More
 

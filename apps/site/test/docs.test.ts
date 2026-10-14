@@ -10,7 +10,7 @@ import { SECTIONS } from "@/lib/docs";
 import { FIGURES, INTENSITY, OPTIONS, measure } from "@/lib/figures";
 import { llms, scale } from "@/lib/llms";
 import { tiny } from "@/lib/size";
-import { COMMAND, EXAMPLES, INSTALL } from "@/lib/skill";
+import { ADOPT, ADOPTED, COMMAND, EXAMPLES, INSTALL } from "@/lib/skill";
 import { highlight } from "@/lib/highlight";
 import { CDN, CSS, EMPTY, QUICKSTART, REACT, REACT_SIGNATURE, VANILLA, VANILLA_SIGNATURE, install } from "@/lib/snippets";
 
@@ -135,13 +135,18 @@ describe("/llms.txt", () => {
     // the two pages a follow-up made say so
     expect(text).toContain(`- \`${COMMAND} git branches\`, then "The rails almost disappear`);
     expect(text).toContain(`- \`${COMMAND} weather over a city\`, then "The cloud looks like a stack of cylinders`);
-    expect(text).toContain("https://example.test/skill\n");
+    expect(text).toContain("https://example.test/skills\n");
     expect(text.indexOf("## Make your own")).toBeLessThan(text.indexOf("## Links"));
   });
 
-  it("says, right after the examples drawn from a company's mark, that the marks are their owners'", () => {
-    const last = EXAMPLES.at(-1)!;
-    expect(text).toContain(`https://example.test/skill/${last.file}\n\n${NOTICE}\n`);
+  it("says, right after hairline-adopt's examples, which start from companies' marks, that the marks are their owners'", () => {
+    expect(text).toContain(`https://example.test/skill/${ADOPTED.at(-1)!.file}\n\n${NOTICE}\n`);
+    expect(text.split(NOTICE)).toHaveLength(2);
+  });
+
+  it("says how to start from an SVG and links each of hairline-adopt's examples to its page", () => {
+    expect(text).toContain(`type \`${ADOPT} <file.svg>\``);
+    for (const e of ADOPTED) expect(text).toContain(`- \`${ADOPT} ${e.idea}\`: https://example.test/skill/${e.file}`);
   });
 
   it.each(FIGURES)("names $name with its row of the intensity table", (doc) => {

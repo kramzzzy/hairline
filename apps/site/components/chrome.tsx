@@ -9,7 +9,7 @@ export function GitHub() {
   );
 }
 
-/** The bar on every page: the name home with the version beside it, then the figures, the skill, the docs, the story, GitHub. */
+/** The bar on every page: the name home with the version beside it, then the figures, the skills, the docs, the story, GitHub. */
 export function Topbar() {
   return (
     <header className="topbar">
@@ -19,7 +19,7 @@ export function Topbar() {
       </div>
       <nav className="flex items-center">
         <a className="topbar-link" href="/figures">Figures</a>
-        <a className="topbar-link" href="/skill">Skill</a>
+        <a className="topbar-link" href="/skills">Skills</a>
         <a className="topbar-link" href="/docs">Docs</a>
         <a className="topbar-link" href="/inspo">Inspo</a>
         <a className="topbar-link" href={LINKS.github} aria-label="GitHub"><GitHub /></a>

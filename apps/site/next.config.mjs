@@ -6,4 +6,6 @@ import { resolveBaseUrl } from "../../scripts/base-url.mjs";
  */
 export default {
   env: { NEXT_PUBLIC_SITE_URL: resolveBaseUrl() },
+  // the page was /skill while there was one skill; only the page moved, its examples stay under /skill/
+  redirects: async () => [{ source: "/skill", destination: "/skills", permanent: true }],
 };

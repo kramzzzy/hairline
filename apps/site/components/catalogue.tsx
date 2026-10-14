@@ -375,7 +375,7 @@ function Detail({
       {made ? (
         <div className="detail-made">
           <Command code={made.prompt} kind="prompt" label={`Copy prompt: ${entry.name}`} />
-          <p className="doc-p">Made with <a className="doc-more" href="/skill">hairline-create</a>. It is not in the package: the page is one file, and the prompt above draws it again.</p>
+          <p className="doc-p">Made with <a className="doc-more" href="/skills">hairline-create</a>. It is not in the package: the page is one file, and the prompt above draws it again.</p>
           <p className="doc-p figs-notice">{NOTICE}</p>
         </div>
       ) : Figure ? (

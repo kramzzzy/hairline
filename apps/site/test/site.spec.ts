@@ -35,11 +35,11 @@ test("the home prerenders the drawing's empty box, then draws it with a clean co
   expect(noise).toEqual([]);
 });
 
-test("the top bar holds the name with the version beside it, then the figures, the skill, the docs, the story and GitHub, and no llms.txt button", async ({ page }) => {
+test("the top bar holds the name with the version beside it, then the figures, the skills, the docs, the story and GitHub, and no llms.txt button", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".topbar nav > *")).toHaveCount(5);
   await expect(page.locator(".topbar nav > a").nth(0)).toHaveText("Figures");
-  await expect(page.locator(".topbar nav > a").nth(1)).toHaveText("Skill");
+  await expect(page.locator(".topbar nav > a").nth(1)).toHaveText("Skills");
   await expect(page.locator(".topbar nav > a").nth(2)).toHaveText("Docs");
   await expect(page.locator(".topbar nav [data-version]")).toHaveCount(0);
   await expect(page.locator(".topbar")).not.toContainText("llms.txt");
@@ -335,7 +335,7 @@ test("a pasted link shows the page it leads to: each page's card has its own tit
     ["/", "hairline", /^Thirty-three isometric line figures/],
     ["/figures", "Figures", /^Eight shelves, thirty-three figures, grouped by what they draw/],
     ["/docs", "Docs", /^Thirty-three isometric line figures/],
-    ["/skill", "Make your own figure", /^hairline-create is a skill/],
+    ["/skills", "Make your own figure", /^Two skills for coding agents/],
     ["/inspo", "How Hairline was made", /^A long brief/],
   ] as const;
   for (const [path, title, text] of CARDS) {
@@ -358,7 +358,7 @@ test("robots.txt lets every crawler in and names the sitemap, which lists the fi
   expect(robots).toContain(`Sitemap: ${BASE}/sitemap.xml`);
 
   const sitemap = await (await request.get("/sitemap.xml")).text();
-  expect([...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1])).toEqual([BASE, `${BASE}/figures`, `${BASE}/docs`, `${BASE}/skill`, `${BASE}/inspo`]);
+  expect([...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1])).toEqual([BASE, `${BASE}/figures`, `${BASE}/docs`, `${BASE}/skills`, `${BASE}/inspo`]);
 });
 
 test("the page fits a phone, with the longest install command, and its buttons", async ({ page }) => {

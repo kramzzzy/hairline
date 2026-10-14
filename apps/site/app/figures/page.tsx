@@ -41,7 +41,7 @@ export default async function Figures() {
         header={
           <header className="hero-rise">
             <h1 className="col-h1" style={at(0)}>Every figure, by what it <em>draws</em>.</h1>
-            <p className="col-lede" style={at(1)}>{LEAD} <a className="doc-more" href="/skill">{SKILL}</a> {TAIL}</p>
+            <p className="col-lede" style={at(1)}>{LEAD} <a className="doc-more" href="/skills">{SKILL}</a> {TAIL}</p>
           </header>
         }
         end={
