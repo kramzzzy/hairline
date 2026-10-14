@@ -18,12 +18,12 @@ export const ADOPT = "/hairline-adopt";
  */
 export type Example = { idea: string; file: string; sha256: string; followUp?: string };
 
-/** What was typed after the command, and the page the skill wrote for it, as /skills shows them. These pages are never edited. */
+/** What was typed after the command, and the page the skill wrote for it, as /skills shows them. Only their kernel is ever changed, swapped whole for the skill's current one. */
 export const EXAMPLES: Example[] = [
-  { idea: "a sales funnel", file: "hairline-funnel.html", sha256: "1c2ad4fb6305da1ceda532da6d96f1cd3060c67d588dec2db6043920e33fc044" },
-  { idea: "a rate limiter", file: "hairline-clearance.html", sha256: "36935c2412526af4331070e5a2d350f6c0a8071156b59955e815175b7a88b34d" },
-  { idea: "git branches", file: "hairline-sidings.html", sha256: "c6844a3c0dc684237508644ef677ae8905b120b73c2af74d7abf5990775106ae", followUp: "The rails almost disappear and the trains read as loose blocks. Make it read as a railway at a glance." },
-  { idea: "weather over a city", file: "hairline-storm.html", sha256: "fe23e7a760c742bf0c68401bb2d3544f700af36865f720b39214ebde237507c0", followUp: "The cloud looks like a stack of cylinders. Make it read as a cloud at a glance." },
+  { idea: "a sales funnel", file: "hairline-funnel.html", sha256: "4077266e19374ac0b82159f70fe196c4b0744b5729940c2ef214a84778cfd4a9" },
+  { idea: "a rate limiter", file: "hairline-clearance.html", sha256: "797e19f6a972c64f359c098ea42cff14958dbf55ac7e786fa6e19037cd4cf7c1" },
+  { idea: "git branches", file: "hairline-sidings.html", sha256: "19509c6b138ca894f9a78f589f5bfd59e00a15ba04e69035d50cd17edd369737", followUp: "The rails almost disappear and the trains read as loose blocks. Make it read as a railway at a glance." },
+  { idea: "weather over a city", file: "hairline-storm.html", sha256: "b7b5b52607f33df1f8f7f12b0d09e1979e3b0e058c39aa117292f403a0941eec", followUp: "The cloud looks like a stack of cylinders. Make it read as a cloud at a glance." },
 ];
 
 /**
@@ -31,22 +31,22 @@ export const EXAMPLES: Example[] = [
  * examples on /skills, and are pinned and checked as the examples are.
  */
 export const MARKS: Example[] = [
-  { idea: "an empty state for \"No deployments yet\", from Vercel's mark: the triangle as an upright slab hovering over a pad with its slot marked dim; the nearer the pointer, the lower it settles, until it seats. Name it vercel.", file: "hairline-vercel.html", sha256: "781db9ab5891183261c3ed03e1050d9fabbc9b95a2a9333425706135953dc839" },
-  { idea: "an empty state for \"No agents connected\", from Mastra's mark: the spheres of the M joined by necks on a board, the lone sphere standing apart; the pointer draws it toward the others, a neck forms, stretches and lets go. Name it mastra.", file: "hairline-mastra.html", sha256: "fa4f03c971f626296cd3a720aed23b81beeda0221652b1c560820a9c3858876a" },
-  { idea: "an empty state for \"No pages inside\", from Notion's mark: the cube as a box with a lid, the N a relief on its front face; the pointer's height opens the lid on a spring, and the box is empty. Name it notion.", file: "hairline-notion.html", sha256: "4ba5f67ee4a4c7d0a0a46757889c8264af3c6a21d285e81e6aa02e65e23f68d7" },
+  { idea: "an empty state for \"No deployments yet\", from Vercel's mark: the triangle as an upright slab hovering over a pad with its slot marked dim; the nearer the pointer, the lower it settles, until it seats. Name it vercel.", file: "hairline-vercel.html", sha256: "720492ce1fb3798b364a49aa882269be3bd345979c3a3d56ede5526bed4177fa" },
+  { idea: "an empty state for \"No agents connected\", from Mastra's mark: the spheres of the M joined by necks on a board, the lone sphere standing apart; the pointer draws it toward the others, a neck forms, stretches and lets go. Name it mastra.", file: "hairline-mastra.html", sha256: "a663c92bffb0614e05ea357554dec07726077775db5b1d897a165941a748f1bd" },
+  { idea: "an empty state for \"No pages inside\", from Notion's mark: the cube as a box with a lid, the N a relief on its front face; the pointer's height opens the lid on a spring, and the box is empty. Name it notion.", file: "hairline-notion.html", sha256: "68676a9bcb37a620836ddc646cb6d2fd1032370fb94be2ebd9abab439a9d59c3" },
 ];
 
 /**
  * What was typed after /hairline-adopt: the SVG, then what the pointer does. Each page came out of a few rounds of
- * changes after that line, so none carries a single follow-up. Two were touched once on the site: firecrawl's name
- * is in English, and linear's tick reads performance.now(), the clock its departures are set by.
+ * changes after that line, so none carries a single follow-up. Firecrawl's was renamed once on the site, so its
+ * name is in English.
  */
 export const ADOPTED: Example[] = [
-  { idea: "deploy.svg the pointer's height is the thrust; raised high enough, the rocket lifts off", file: "hairline-deploy-liftoff.html", sha256: "0b7392c2befd22bf553c6c08edb3b07f7945a3d01a1f3852011e309f2c4bca33" },
-  { idea: "firecrawl.svg the flame reads a page: point down it, and each part peels off onto a sheet of markdown", file: "hairline-firecrawl-reader.html", sha256: "df47f616e57fbc9e2f5ab65acff68c28bbb87ac33c3a73bf4939d8c83245fd76" },
-  { idea: "resend.svg the R is the sender: while the pointer is over it, a belt runs out of its block and each letter rides it into a tray", file: "hairline-resend-belt.html", sha256: "c10a3ed6d38f2da2ffb50e4a22facd234cbcc3197ba3aa2eba041f47f3d46173" },
-  { idea: "linear.svg the stripes are lanes: point up across them, and the issues move lane to lane until they are done", file: "hairline-linear-cycle.html", sha256: "2272ea7240311a7cf1ce9ff3c54d6a93d03cda4a41a1b3c85bceb5680ed99ba8" },
-  { idea: "cursor.svg the mark is the caret over code: point down the page, and each suggested line is accepted", file: "hairline-cursor-tab.html", sha256: "1dcbfb43b851b95d7adb001fc14e5f40a688e058e761f6c1596c240ba137a073" },
+  { idea: "deploy.svg the pointer's height is the thrust; raised high enough, the rocket lifts off", file: "hairline-deploy-liftoff.html", sha256: "1d30596f9fe1e55e286c4629d4572f559b95112159c671ee776a4a02bb0073a4" },
+  { idea: "firecrawl.svg the flame reads a page: point down it, and each part peels off onto a sheet of markdown", file: "hairline-firecrawl-reader.html", sha256: "4d41ad4bad7bbf1813653e25336960fd4480a87d9f32884ff3fd79ebec19e424" },
+  { idea: "resend.svg the R is the sender: while the pointer is over it, a belt runs out of its block and each letter rides it into a tray", file: "hairline-resend-belt.html", sha256: "628815e1d5b9e89befb722ea5e64a79cef791d1112a34549fbed1d615a06f624" },
+  { idea: "linear.svg the stripes are lanes: point up across them, and the issues move lane to lane until they are done", file: "hairline-linear-cycle.html", sha256: "87a959e37ff92ca739ba2baf05e585d66451fda30a493c8ea58619a201d20ed0" },
+  { idea: "cursor.svg the mark is the caret over code: point down the page, and each suggested line is accepted", file: "hairline-cursor-tab.html", sha256: "287abc2c7ec4adc1c79235e090239f3c5888188ba4e550f50adf78b957160ff2" },
 ];
 
 export type Shown = Example & { name: string; means: string; prompt: string; href: string };

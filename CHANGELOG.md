@@ -13,6 +13,13 @@ Every release of `@lucasmarkes/hairline`. The format follows
   step 0, `read.mjs` and `source.md`; `look.mjs --source` puts the SVG beside
   the rest picture on the sheet.
 
+### Fixed
+
+- Figures in a frame that loaded late answer the pointer at once. Chrome's
+  frame time there can trail `performance.now()` by seconds, and figures that
+  timed their moves by both clocks waited that long. The loop now hands every
+  tick `performance.now()`. The skill's `kernel.js` has the same fix.
+
 ## 0.5.0 - 2026-10-08
 
 ### Added
