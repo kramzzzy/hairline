@@ -8,11 +8,10 @@ Every release of `@lucasmarkes/hairline`. The format follows
 
 ### Added
 
-- `hairline-adopt`, a skill that reads an SVG the person already has and
-  leads `hairline-create` to rebuild its object as a figure. `hairline-create`
-  gains step 0, `read.mjs` (the drawing as a picture, on dark when its ink
-  is light, and a card of what it measured, one line per piece of a path) and `source.md`; `look.mjs --source` puts the drawing beside the
-  rest picture on the sheet.
+- `hairline-adopt`, a skill that reads an existing SVG and hands it to
+  `hairline-create`, which rebuilds it as a figure. `hairline-create` gains
+  step 0, `read.mjs` and `source.md`; `look.mjs --source` puts the SVG beside
+  the rest picture on the sheet.
 
 ## 0.5.0 - 2026-10-08
 
