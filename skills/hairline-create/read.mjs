@@ -5,10 +5,11 @@
  *   node <skill folder>/read.mjs <file.svg> [--name <name>]
  *
  * It writes, in the working directory, hairline-<name>-source.png, the SVG
- * drawn at 400 × 400 on white, and hairline-<name>-source.txt, the card: the
- * viewBox, the title and ids, the ink's box, and one line per painted shape
- * with its type, group, box, centre, fill or stroke, and its relation to the
- * shape it sits in or touches. source.md says how to read it. The boxes come
+ * drawn at 400 × 400 on white, or on dark when its ink is light, and
+ * hairline-<name>-source.txt, the card: the viewBox, the title and ids, the
+ * ink's box, and one line per painted shape, each piece of a path drawn in
+ * several counted as one, with its type, group, box, centre, fill or stroke,
+ * and its relation to the shape it sits in or touches. source.md says how to read it. The boxes come
  * from the browser look.mjs installs; without one the card is reduced to what
  * the XML says, and no picture is written. The SVG gives the identity, not
  * the paths: nothing here is traced.
@@ -29,6 +30,8 @@ const LISTED = 23;
 const SMALL = 0.02;
 /** Boxes this close, as a share of the ink's size, touch; a mirror matches within it too. */
 const NEAR = 0.05;
+/** Ink whose mean luminance is above this is drawn on dark: on white it would vanish. */
+const LIGHT = 0.5;
 
 const SHAPES = ["path", "rect", "circle", "ellipse", "line", "polyline", "polygon"];
 const UNREAD = ["text", "image", "foreignObject"];
@@ -132,6 +135,23 @@ export function relate(shapes, ink) {
   });
 }
 
+/**
+ * Whether the ink is light: the luminance of each shape's colour, weighted by its box. A colour that is not plain (a gradient) is left out.
+ * @param {any[]} shapes
+ */
+export function light(shapes) {
+  const lin = (c) => (c /= 255) <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  let sum = 0, weight = 0;
+  for (const s of shapes) {
+    const c = /rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/.exec(s.colour ?? "");
+    if (!c) continue;
+    const w = Math.max(area(s.box), 1e-6);
+    sum += w * (0.2126 * lin(+c[1]) + 0.7152 * lin(+c[2]) + 0.0722 * lin(+c[3]));
+    weight += w;
+  }
+  return weight > 0 && sum / weight > LIGHT;
+}
+
 /** The box round a list of boxes. */
 const union = (boxes) => {
   const x0 = Math.min(...boxes.map((b) => b.x)), y0 = Math.min(...boxes.map((b) => b.y));
@@ -145,8 +165,9 @@ const pad = (s, n) => String(s).padEnd(n);
  * The card. With `shapes` null it is the reduced card: what scan() read, and a line saying the rest was not taken.
  * @param {any} info
  * @param {any[] | null} [shapes]
+ * @param {boolean} [dark] the picture was taken on dark
  */
-export function card(info, shapes = null) {
+export function card(info, shapes = null, dark = false) {
   const [vx, vy, vw, vh] = info.viewBox;
   const total = shapes ? shapes.length : Object.values(info.counts).reduce((a, b) => a + b, 0);
   const lines = [
@@ -170,13 +191,13 @@ export function card(info, shapes = null) {
   const listed = shapes.filter((s) => !small.includes(s));
   /* the ink is the listed shapes' box: a speck at the corner does not stretch it */
   const ink = union((listed.length ? listed : shapes).map((s) => s.box));
-  lines.push(`ink: ${span(ink)}  (${Math.round((ink.w / vw) * 100)}% × ${Math.round((ink.h / vh) * 100)}% of the viewBox)`, "");
+  lines.push(`ink: ${span(ink)}  (${Math.round((ink.w / vw) * 100)}% × ${Math.round((ink.h / vh) * 100)}% of the viewBox)${dark ? "  light ink: the picture is on dark" : ""}`, "");
   const rel = relate(listed, ink);
   const shown = listed.slice(0, LISTED);
   shown.forEach((s, k) => {
     const [cx, cy] = centre(s.box);
     const paint = [s.filled && "filled", s.stroke !== null && `stroke ${r1(s.stroke)}`].filter(Boolean).join(", ") || "no paint";
-    const shape = [s.closed ? "closed" : "open", s.kind].filter(Boolean).join(", ");
+    const shape = [s.closed ? "closed" : "open", s.kind, s.part && `part ${s.part}`].filter(Boolean).join(", ");
     const tall = s.box.h > s.box.w * 1.5 ? `  (tall, ${ratio(s.box.w, s.box.h)})` : s.box.w > s.box.h * 1.5 ? `  (wide, ${ratio(s.box.w, s.box.h)})` : "";
     const note = rel[k] ? `  ${rel[k]}` : tall;
     lines.push(`#${pad(s.i, 2)} ${pad(s.type, 7)} ${pad(s.group ? `g#${s.group}` : "-", 9)} box ${span(s.box)}  centre ${r1(cx)},${r1(cy)}  ${paint}  ${shape}${note}`);
@@ -187,16 +208,16 @@ export function card(info, shapes = null) {
   return lines.slice(0, 30).join("\n");
 }
 
-/** The page the picture is taken of: the SVG at 400 × 400 on white, kept whole inside the box. */
-export function page(xml, viewBox) {
+/** The page the picture is taken of: the SVG at 400 × 400 on white, or on dark, kept whole inside the box. */
+export function page(xml, viewBox, dark = false) {
   const svg = xml.replace(/<\?xml[\s\S]*?\?>|<!DOCTYPE[^[>]*(?:\[[\s\S]*?\])?\s*>/gi, "").replace(/<svg\b([^>]*)>/, (m, attrs) => {
     const kept = attrs.replace(/\s(width|height|viewBox|preserveAspectRatio)\s*=\s*(?:"[^"]*"|'[^']*')/g, "");
     return `<svg${kept} viewBox="${viewBox.join(" ")}" width="400" height="400" preserveAspectRatio="xMidYMid meet">`;
   });
-  return `<!doctype html><meta charset="utf-8"><style>html,body{margin:0;background:#fff}#box{width:400px;height:400px;color:#18181b}#box>svg{display:block}</style><div id="box">${svg}</div>`;
+  return `<!doctype html><meta charset="utf-8"><style>html,body{margin:0;background:${dark ? "#18181b" : "#fff"}}#box{width:400px;height:400px;color:#18181b}#box>svg{display:block}</style><div id="box">${svg}</div>`;
 }
 
-/* Measured in the page: every painted shape in paint order, its box in the root's viewBox units with every transform applied. A <use> that points inside the file is one shape, by what it draws. */
+/* Measured in the page: every painted shape in paint order, its box in the root's viewBox units with every transform applied, and its colour. A <use> that points inside the file is one shape, by what it draws; a path drawn in several pieces is one shape per piece. */
 const MEASURE = () => {
   const root = document.querySelector("#box > svg");
   /* screen CTMs, not getCTM(): getCTM() stops at the nearest viewport, which inside a nested <svg> is not the root */
@@ -204,45 +225,81 @@ const MEASURE = () => {
   const hidden = "defs, symbol, clipPath, mask, pattern, marker";
   const els = [...root.querySelectorAll("path, rect, circle, ellipse, line, polyline, polygon, use")].filter((el) => !el.parentElement.closest(hidden));
   const list = [];
+  const NUM = "([+-]?(?:\\d+\\.?\\d*|\\.\\d+)(?:e[+-]?\\d+)?)";
+  const START = new RegExp(`^\\s*[Mm]\\s*${NUM}[\\s,]*${NUM}`, "i");
+  /* The pieces of a path, each from its own move: each measured alone, a relative move taken from where the piece before it ended. Null for one piece. */
+  const pieces = (el) => {
+    const all = (el.getAttribute("d") ?? "").split(/(?=[Mm])/).filter((p) => /\S/.test(p));
+    if (all.length < 2) return null;
+    const tmp = document.createElementNS(el.namespaceURI, "path");
+    el.parentNode.insertBefore(tmp, el);
+    try {
+      const out = [];
+      let at = [0, 0];
+      for (const piece of all) {
+        const m = START.exec(piece);
+        if (!m) return null;
+        const rel = piece.trimStart()[0] === "m";
+        const from = rel ? [at[0] + Number(m[1]), at[1] + Number(m[2])] : [Number(m[1]), Number(m[2])];
+        const rest = piece.slice(m[0].length);
+        /* pairs right after a move are lines, relative after m */
+        tmp.setAttribute("d", `M${from[0]} ${from[1]}${/^[\s,]*[-+.\d]/.test(rest) ? (rel ? " l" : " L") : ""}${rest}`);
+        const length = tmp.getTotalLength();
+        const end = length > 0 ? tmp.getPointAtLength(length) : null;
+        at = end ? [end.x, end.y] : from;
+        const b = tmp.getBBox();
+        if (b.width > 0 || b.height > 0) out.push({ b, d: piece });
+      }
+      return out.length > 1 ? out : null;
+    } finally {
+      tmp.remove();
+    }
+  };
+  const boxIn = (b, m) => {
+    const pts = [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]].map(([x, y]) => new DOMPoint(x, y).matrixTransform(m));
+    const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
+    const x = Math.min(...xs), y = Math.min(...ys);
+    return { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y };
+  };
   for (const el of els) {
     if (el.tagName === "use" && !(el.getAttribute("href") ?? el.getAttribute("xlink:href") ?? "").startsWith("#")) continue;
     let b;
     try { b = el.getBBox(); } catch { continue; }
     if (!(b.width > 0 || b.height > 0)) continue;
     const m = toRoot.multiply(el.getScreenCTM());
-    const pts = [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]].map(([x, y]) => new DOMPoint(x, y).matrixTransform(m));
-    const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
-    const x = Math.min(...xs), y = Math.min(...ys);
     const cs = getComputedStyle(el);
-    const d = el.getAttribute("d") ?? "";
     const tag = el.tagName;
-    const kind = tag === "path"
-      ? [/[CcSsQqTtAa]/.test(d) && "curves", /[LlHhVv]/.test(d) && "lines"].filter(Boolean).join(" and ")
-      : ["circle", "ellipse"].includes(tag) ? "curves"
+    const curvesOf = (d) => [/[CcSsQqTtAa]/.test(d) && "curves", /[LlHhVv]/.test(d) && "lines"].filter(Boolean).join(" and ");
+    const kind = ["circle", "ellipse"].includes(tag) ? "curves"
       : tag === "rect" && Number(el.getAttribute("rx") || el.getAttribute("ry") || 0) > 0 ? "curves and lines"
       : tag === "use" ? "" : "lines";
-    const closed = tag === "path" ? /[Zz]/.test(d) : !["line", "polyline"].includes(tag);
     const sw = parseFloat(cs.strokeWidth);
-    list.push({
-      i: list.length + 1, type: tag, group: el.parentElement.closest("g[id]")?.id ?? null,
-      box: { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y },
-      filled: cs.fill !== "none" && parseFloat(cs.fillOpacity) !== 0,
-      stroke: cs.stroke !== "none" && sw > 0 ? sw : null,
-      closed, kind,
-    });
+    const filled = cs.fill !== "none" && parseFloat(cs.fillOpacity) !== 0;
+    const stroke = cs.stroke !== "none" && sw > 0 ? sw : null;
+    const common = { type: tag, group: el.parentElement.closest("g[id]")?.id ?? null, filled, stroke, colour: filled ? cs.fill : stroke !== null ? cs.stroke : null };
+    const parts = tag === "path" ? pieces(el) : null;
+    if (parts) {
+      parts.forEach((p, k) => list.push({ i: list.length + 1, ...common, box: boxIn(p.b, m), closed: /[Zz]/.test(p.d), kind: curvesOf(p.d), part: `${k + 1} of ${parts.length}` }));
+      continue;
+    }
+    const d = el.getAttribute("d") ?? "";
+    const closed = tag === "path" ? /[Zz]/.test(d) : !["line", "polyline"].includes(tag);
+    list.push({ i: list.length + 1, ...common, box: boxIn(b, m), closed, kind: tag === "path" ? curvesOf(d) : kind });
   }
   return list;
 };
 
-/** The picture and the shapes, from a fresh context of a browser the caller owns. The SVG's scripts never run and nothing is fetched: a file from anywhere is drawn as written. */
+/** The picture, the shapes and whether the picture is on dark, from a fresh context of a browser the caller owns. The SVG's scripts never run and nothing is fetched: a file from anywhere is drawn as written. */
 export async function snapshot(browser, xml, viewBox) {
   const context = await browser.newContext({ viewport: { width: 400, height: 400 }, deviceScaleFactor: 2, colorScheme: "light", javaScriptEnabled: false, offline: true });
   try {
     const p = await context.newPage();
     await p.setContent(page(xml, viewBox));
     const shapes = await p.evaluate(MEASURE);
+    const dark = light(shapes);
+    if (dark) await p.setContent(page(xml, viewBox, true));
     const png = (await p.screenshot({ clip: { x: 0, y: 0, width: 400, height: 400 } })).toString("base64");
-    return { png, shapes };
+    return { png, shapes, dark };
   } finally {
     await context.close();
   }
@@ -266,9 +323,9 @@ export async function read(src, given = {}, cwd = process.cwd()) {
     console.log(`no browser: ${why || "neither Chrome nor Playwright's Chromium would start"}. The card is reduced to what the XML says, and no picture was taken.`);
   } else {
     try {
-      const { png: b64, shapes } = await snapshot(browser, xml, info.viewBox);
+      const { png: b64, shapes, dark } = await snapshot(browser, xml, info.viewBox);
       writeFileSync(png, Buffer.from(b64, "base64"));
-      text = card(info, shapes);
+      text = card(info, shapes, dark);
       console.log(`picture ${png}`);
     } catch (e) {
       /* the browser started but could not draw this file: the reduced card is still a reading */

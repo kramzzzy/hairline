@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { expect, it } from "vitest";
-import { card, nameFor, page, relate, scan } from "../../../../skills/hairline-create/read.mjs";
+import { card, light, nameFor, page, relate, scan } from "../../../../skills/hairline-create/read.mjs";
 
 const FIX = fileURLToPath(new URL("./fixtures/", import.meta.url));
 const svg = (f: string) => readFileSync(FIX + f, "utf8");
@@ -124,4 +124,39 @@ it("drops a DOCTYPE with an internal subset whole, so nothing of it lands in the
   const html = page(svg("illustrator.svg"), [0, 0, 100, 100]);
   expect(html).not.toContain("]>");
   expect(html).not.toContain("ENTITY");
+});
+
+/** Found on a real logo: ink of #FDFDFD vanished on the white picture. */
+it("calls the ink light by its colours, weighted by each shape's box", () => {
+  const C = (colour: string | null, w: number) => ({ ...S(1, 0, 0, w, w), colour });
+  expect(light([C("rgb(253, 253, 253)", 10)])).toBe(true);
+  expect(light([C("rgb(24, 24, 27)", 10)])).toBe(false);
+  /* a large dark shape with a small light one inside is dark ink */
+  expect(light([C("rgb(0, 0, 0)", 10), C("rgb(255, 255, 255)", 3)])).toBe(false);
+  /* a white tile carrying a dark glyph is light ink: on white the tile would vanish */
+  expect(light([C("rgb(255, 255, 255)", 10), C("rgb(0, 0, 0)", 3)])).toBe(true);
+  /* a gradient or nothing known: white, as before */
+  expect(light([C(null, 10)])).toBe(false);
+  expect(light([])).toBe(false);
+});
+
+it("draws the picture on dark when asked, and on white otherwise", () => {
+  expect(page(svg("mark.svg"), [0, 0, 100, 100])).toContain("background:#fff");
+  const dark = page(svg("mark.svg"), [0, 0, 100, 100], true);
+  expect(dark).toContain("background:#18181b");
+  expect(dark).not.toContain("background:#fff");
+});
+
+it("says on the ink line when the picture is on dark", () => {
+  const info = scan(svg("mark.svg"), "mark.svg");
+  const shapes = [S(1, 10, 10, 80, 80)];
+  expect(card(info, shapes).split("\n")[2]).toBe("ink: 10..90 × 10..90  (80% × 80% of the viewBox)");
+  expect(card(info, shapes, true).split("\n")[2]).toBe("ink: 10..90 × 10..90  (80% × 80% of the viewBox)  light ink: the picture is on dark");
+});
+
+/** Found on a real logo: one <path> of three subpaths was one shape on the card. */
+it("names each part of a path drawn in several pieces", () => {
+  const info = scan(svg("mark.svg"), "mark.svg");
+  const parts = [{ ...S(1, 2, 2, 6, 6), part: "1 of 2" }, { ...S(2, 12, 2, 6, 6), part: "2 of 2" }];
+  expect(card(info, parts)).toMatch(/^#2 +path .* closed, lines, part 2 of 2/m);
 });

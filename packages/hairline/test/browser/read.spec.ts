@@ -3,6 +3,7 @@ import { execFile } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
+import { inflateSync } from "node:zlib";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -30,6 +31,16 @@ function read(cwd: string, env: Record<string, string>, ...args: string[]): Prom
   });
 }
 const PNG = "89504e470d0a1a0a";
+/** The top-left pixel of a PNG: the first pixel of the first row is stored as is, whatever the row's filter. */
+function corner(png: Buffer): number[] {
+  const data: Buffer[] = [];
+  for (let at = 8; at < png.length;) {
+    const size = png.readUInt32BE(at), type = png.toString("ascii", at + 4, at + 8);
+    if (type === "IDAT") data.push(png.subarray(at + 8, at + 8 + size));
+    at += 12 + size;
+  }
+  return [...inflateSync(Buffer.concat(data)).subarray(1, 4)];
+}
 
 test.describe("read.mjs", () => {
   test.setTimeout(60_000);
@@ -88,6 +99,30 @@ test.describe("read.mjs", () => {
     const run = await read(cwd, { HAIRLINE_LOOK_CACHE: cache }, FIX + "scripted.svg");
     expect(run.code, run.out).toBe(0);
     expect(readFileSync(join(cwd, "hairline-scripted-source.txt"), "utf8")).toMatch(/^#1 {2}rect {4}- {9}box 10\.\.90 × 10\.\.90 /m);
+  });
+
+  test("draws light ink on dark, and says so on the ink line", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "hl-read-"));
+    const run = await read(cwd, { HAIRLINE_LOOK_CACHE: cache }, FIX + "light.svg");
+    expect(run.code, run.out).toBe(0);
+    const card = readFileSync(join(cwd, "hairline-light-source.txt"), "utf8");
+    expect(card.split("\n")[2]).toBe("ink: 4..20 × 4..20  (67% × 67% of the viewBox)  light ink: the picture is on dark");
+    expect(corner(readFileSync(join(cwd, "hairline-light-source.png")))).toEqual([24, 24, 27]);
+    /* dark ink stays on white */
+    await read(cwd, { HAIRLINE_LOOK_CACHE: cache }, FIX + "rocket.svg");
+    expect(corner(readFileSync(join(cwd, "hairline-rocket-source.png")))).toEqual([255, 255, 255]);
+  });
+
+  test("lists each piece of a path drawn in several, a relative move after a close included", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "hl-read-"));
+    const run = await read(cwd, { HAIRLINE_LOOK_CACHE: cache }, FIX + "compound.svg");
+    expect(run.code, run.out).toBe(0);
+    const card = readFileSync(join(cwd, "hairline-compound-source.txt"), "utf8");
+    expect(card.split("\n")[0]).toBe("compound.svg  viewBox 0 0 20 20  (1:1)  3 shapes in 0 groups");
+    expect(card).toMatch(/^#1 {2}path {4}- {9}box 2\.\.8 × 2\.\.8 .* closed, lines, part 1 of 3/m);
+    /* m10 0 after z starts at the first piece's start, 2,2, so at 12,2 */
+    expect(card).toMatch(/^#2 {2}path {4}- {9}box 12\.\.18 × 2\.\.8 .* closed, lines, part 2 of 3/m);
+    expect(card).toMatch(/^#3 {2}path {4}- {9}box 2\.\.18 × 12\.\.18 .* closed, curves and lines, part 3 of 3/m);
   });
 
   test("without a browser, writes the reduced card, no picture, and exits 0", async () => {

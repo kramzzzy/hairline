@@ -1,6 +1,6 @@
 # From a drawing the person already has
 
-`read.mjs` wrote two files: `hairline-<name>-source.png`, the SVG as it looks, and `hairline-<name>-source.txt`, the card: its viewBox, title and ids, the ink's box, and one line per painted shape with its box, centre, paint and its relation to the shape it sits in or touches. Look at the picture. Read the card. Then answer these, in order, before any concept is written.
+`read.mjs` wrote two files: `hairline-<name>-source.png`, the SVG as it looks (on dark when its ink is light, and the card's ink line says so), and `hairline-<name>-source.txt`, the card: its viewBox, title and ids, the ink's box, and one line per painted shape with its box, centre, paint and its relation to the shape it sits in or touches. A path drawn in several pieces, a wordmark's letters in one `<path>`, gives one line per piece, each marked `part 2 of 9`. Look at the picture. Read the card. Then answer these, in order, before any concept is written.
 
 **The SVG gives the identity, not the paths. The figure is rebuilt as solids, with the source's proportions, in the kernel's style. Never trace a path.** The person will know their object by its parts and its proportions, not by its coordinates.
 
