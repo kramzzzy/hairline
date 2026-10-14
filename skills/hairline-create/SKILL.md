@@ -12,6 +12,10 @@ You write one thing: the figure. The engine (`kernel.js`) and the page (`bench.h
 
 Every file named below is in this skill's folder. The figure and the page are written in the person's working directory: run `build.mjs`, `validate.mjs` and `look.mjs` from there, by their path in this folder.
 
+## 0. Source
+
+Only when the request came with an `.svg` file. Run `node read.mjs <file.svg>`: it writes the SVG as a picture and a card of what it measured, both in the working directory. Then read `source.md` and answer its questions. The object and its parts are now fixed: every concept in step 1 keeps them.
+
 ## 1. Concept
 
 Read `concepts.md`. It has a section for an empty state and one for a figure drawn from a mark. Then offer two or three concepts, one line each:
@@ -19,6 +23,8 @@ Read `concepts.md`. It has a section for an empty state and one for a figure dra
 > **Name.** The object. What the pointer does to it. What the read-out says. Where the tour stops.
 
 Wait for the person to pick. Skip this step only when they arrived with the object and the gesture already chosen. If there is nobody to ask, take the concept with the strongest rest pose and say which you took.
+
+With a source (step 0), every concept keeps the object and its parts: they differ in the gesture, or, when the gesture came with the request, in the form and the read-out.
 
 One figure, one idea. A concept that needs a label to be understood is not a concept yet.
 
@@ -37,7 +43,7 @@ One figure, one idea. A concept that needs a label to be understood is not a con
 
 ## 3. Check
 
-1. `node look.mjs <name>.js --answer x,y,z --edge x,y,z`, the points being world points of your figure, as `look.md` says. It builds the page, validates it, takes the eight pictures on one sheet, `hairline-<name>-look.png`, and checks the frame, the read-out and the console. Fix every line it prints as failed, and run it again until it exits 0.
+1. `node look.mjs <name>.js --answer x,y,z --edge x,y,z`, and `--source <file.svg>` when there is one, the points being world points of your figure, as `look.md` says. It builds the page, validates it, takes the eight pictures on one sheet, `hairline-<name>-look.png`, and checks the frame, the read-out and the console. Fix every line it prints as failed, and run it again until it exits 0.
 2. Read `look.md`, then the sheet, and answer its questions. Fix what fails, then go back to 1.
 
 `look.mjs` needs a browser and installs `playwright-core` once, outside this folder. Without one, check with `node validate.mjs hairline-<name>.html` after each build and do the look as `look.md` says under "Without a browser". Without Node, read the list of checks at the top of `validate.mjs` and answer each one from your code.
@@ -74,3 +80,5 @@ When the person asks for a change, edit only `<name>.js`, then run `look.mjs` ag
 | editing the kernel or the bench to make something work | the figure is wrong; change the figure |
 | making the tour visit every part in turn | three stops that each show a different answer, then a leave: a lap is a sentence, not an inventory |
 | letting in a second idea | cut it: one figure, one idea |
+| tracing a path from the SVG, or copying its coordinates | build the part as a solid with the proportions the card gives (`source.md`) |
+| keeping a part of the SVG that is decoration | drop it: two or three parts make the object |

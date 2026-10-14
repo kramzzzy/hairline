@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
-export type RailIcon = "bolt" | "braces" | "stack" | "book" | "sparkle";
+export type RailIcon = "bolt" | "braces" | "stack" | "book" | "sparkle" | "path";
 export type RailGroup = { title: string; icon: RailIcon; color: string; items: { id: string; title: string }[] };
 
 const svg = (children: ReactNode) => (
@@ -36,6 +36,13 @@ const ICONS: Record<RailIcon, ReactNode> = {
     <>
       <path d="M8 1.75c.4 3.1 1.9 4.6 5 5-3.1.4-4.6 1.9-5 5-.4-3.1-1.9-4.6-5-5 3.1-.4 4.6-1.9 5-5Z" fill="currentColor" fillOpacity=".2" />
       <path d="M12.75 11.25v2.5M11.5 12.5H14" />
+    </>,
+  ),
+  path: svg(
+    <>
+      <path d="M3 13c.5-5 3.5-9.5 10-10" />
+      <rect x="1.75" y="11.75" width="2.5" height="2.5" rx=".6" fill="currentColor" fillOpacity=".2" />
+      <rect x="11.75" y="1.75" width="2.5" height="2.5" rx=".6" fill="currentColor" fillOpacity=".2" />
     </>,
   ),
 };

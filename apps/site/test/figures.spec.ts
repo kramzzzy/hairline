@@ -225,7 +225,7 @@ test("the Marks shelf shows three figures the skill made, each with its prompt a
   await expect(drawer).toContainText("not affiliated");
   await expect(drawer.getByRole("tab")).toHaveCount(0);
   await expect(drawer.locator("input[type=range]")).toHaveCount(0);
-  await expect(drawer.getByRole("link", { name: "hairline-create" })).toHaveAttribute("href", "/skill");
+  await expect(drawer.getByRole("link", { name: "hairline-create" })).toHaveAttribute("href", "/skills");
 });
 
 test("Escape pressed inside a made page's frame closes the drawer, as it does outside", async ({ page }) => {

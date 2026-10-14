@@ -146,7 +146,13 @@ Then type the command with an idea in the agent:
 
 It offers two or three concepts, draws the one you pick, checks it against the rules and in a browser, and hands over `hairline-<name>.html`: one file with no dependencies that opens from disk. It runs on any agent that reads skills: Claude Code, Cursor, Codex and others.
 
-Four figures it drew, each beside its prompt: [hairline.lucasmarkes.com/skill](https://hairline.lucasmarkes.com/skill).
+With a drawing you already have, an icon or a logo as an SVG, `hairline-adopt` reads it, rebuilds its object as a figure with its proportions and its parts, and proposes what the pointer does to it:
+
+```
+/hairline-adopt icons/deploy.svg
+```
+
+What both skills drew, each beside its prompt: [hairline.lucasmarkes.com/skills](https://hairline.lucasmarkes.com/skills).
 
 ## More
 

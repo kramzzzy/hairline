@@ -7,10 +7,10 @@ import { expect, it } from "vitest";
 
 /** The skill folder is what an agent installs: these hold its shape. */
 const SKILL = fileURLToPath(new URL("../../../../skills/hairline-create/", import.meta.url));
-const FILES = ["SKILL.md", "bench.html", "build.mjs", "concepts.md", "examples/riffle.js", "examples/terrain.js", "kernel.js", "look.md", "look.mjs", "rules.md", "validate.mjs"];
+const FILES = ["SKILL.md", "bench.html", "build.mjs", "concepts.md", "examples/riffle.js", "examples/terrain.js", "kernel.js", "look.md", "look.mjs", "read.mjs", "rules.md", "source.md", "validate.mjs"];
 const text = (p: string) => readFileSync(SKILL + p, "utf8");
 
-it("holds exactly its eleven files", () => {
+it("holds exactly its thirteen files", () => {
   const found = (readdirSync(SKILL, { recursive: true, withFileTypes: true }) as import("node:fs").Dirent[])
     .filter((e) => e.isFile())
     .map((e) => (e.parentPath + "/" + e.name).slice(SKILL.length).replace(/^\//, ""));
@@ -105,4 +105,35 @@ it("concepts.md says how to draw an empty state and how to draw from a mark, and
   for (const line of [r10.split("- **Rejected when:**")[1].split("\n")[0], look.split(/^11\. /m)[1].split("\n")[0]]) expect(line).toMatch(/a glyph built as a solid that is the figure's whole subject/);
   expect(look).toMatch(/^13\. \*\*An empty state says something is missing\.\*\*/m);
   expect(text("SKILL.md").split("\n").length).toBeLessThan(120);
+});
+
+it("SKILL.md has a step 0 that reads an SVG the person brought, and source.md says how to read the card", () => {
+  const skill = text("SKILL.md");
+  expect(skill).toMatch(/^## 0\. Source$/m);
+  const step0 = skill.split("## 0. Source")[1].split("\n## ")[0];
+  expect(step0).toContain("`node read.mjs <file.svg>`");
+  expect(step0).toContain("`source.md`");
+  expect(step0).toMatch(/every concept in step 1 keeps them/);
+  /* with a source the concepts vary in the gesture, or in the form and the read-out when the gesture was given */
+  const step1 = skill.split("## 1. Concept")[1].split("\n## ")[0];
+  expect(step1).toMatch(/With a source \(step 0\), every concept keeps the object and its parts: they differ in the gesture, or, when the gesture came with the request, in the form and the read-out\./);
+  /* the look is told about the source */
+  expect(skill.split("## 3. Check")[1].split("\n## ")[0]).toContain("`--source <file.svg>`");
+  /* the two habits */
+  expect(skill).toMatch(/\| tracing a path from the SVG, or copying its coordinates \| build the part as a solid with the proportions the card gives \(`source\.md`\) \|/);
+  expect(skill).toMatch(/\| keeping a part of the SVG that is decoration \| drop it: two or three parts make the object \|/);
+  const source = text("source.md");
+  expect(source).toMatch(/\*\*The SVG gives the identity, not the paths\./);
+  expect(source).toMatch(/Never trace a path\./);
+  for (const q of ["What is the object?", "Which parts make it that object?", "Which proportions must survive?", "What is decoration?", "What does the object answer?"]) expect(source, q).toContain(`**${q}**`);
+  expect(source).toContain("Six answers already proven");
+  expect(source).toContain("the picture wins");
+  expect(skill.split("\n").length).toBeLessThan(120);
+});
+
+it("look.md names --source and asks whether rest still reads as the source", () => {
+  const look = text("look.md");
+  expect(look).toContain("[--source <file.svg>]");
+  expect(look).toMatch(/^14\. \*\*Rest still reads as the source\.\*\*/m);
+  expect(look.split(/^14\. /m)[1].split("\n")[0]).toMatch(/`source\.md` said must survive/);
 });

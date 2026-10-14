@@ -2,7 +2,7 @@
 /**
  * The look in one command, run from the person's working directory:
  *
- *   node <skill folder>/look.mjs <name>.js --answer x,y,z [--edge x,y,z [--edge x,y,z]] [--zoom <shot>]
+ *   node <skill folder>/look.mjs <name>.js --answer x,y,z [--edge x,y,z [--edge x,y,z]] [--zoom <shot>] [--source <file.svg>]
  *
  * It builds and validates the page as build.mjs and validate.mjs do, opens
  * look.md's eight addresses at once in one browser, and writes the eight
@@ -40,7 +40,7 @@ import { assemble, nameOf } from "./build.mjs";
 import { validate } from "./validate.mjs";
 
 const here = (p) => fileURLToPath(new URL(p, import.meta.url));
-const USAGE = "usage: node look.mjs <name>.js --answer x,y,z [--edge x,y,z [--edge x,y,z]] [--zoom <shot>]";
+const USAGE = "usage: node look.mjs <name>.js --answer x,y,z [--edge x,y,z [--edge x,y,z]] [--zoom <shot>] [--source <file.svg>]";
 /** Each picture waits 1.5 seconds after its page loads, then until its drawing holds still for a quarter of a second, and no longer than 5 seconds from the load. */
 const WAIT = 1500, STILL = 250, CAP = 5000;
 /** A rest pose whose box covers less of the frame than this is reported as small. Both examples' rest boxes cover 36%: Terrain's 297 × 155, Riffle's 226 × 205. */
@@ -106,7 +106,7 @@ export function point(s) {
 }
 
 /** playwright-core from the cache, installed there first when it is not. Throws with a reason when it cannot be had. */
-function playwright(dir) {
+export function playwright(dir) {
   const req = createRequire(join(dir, "look.cjs"));
   const has = () => { try { return req.resolve("playwright-core/package.json"); } catch { return null; } };
   if (!has()) {
@@ -119,6 +119,11 @@ function playwright(dir) {
     if (run.status !== 0 || !has()) throw new Error(why || "npm failed");
   }
   return { chromium: req("playwright-core").chromium, cli: join(dirname(has()), "cli.js") };
+}
+
+/** Starts the browser: the installed Chrome, or Playwright's own Chromium when there is none. Rejects when neither launches. */
+export function launch(pw) {
+  return pw.chromium.launch({ channel: "chrome" }).catch(() => pw.chromium.launch());
 }
 
 /*
@@ -203,8 +208,8 @@ async function open(context, url, trap = false) {
 }
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
-/** The sheet: rest and answering large, the two thumbnails at their own size beside the themes, then the slider's two ends. */
-function sheet(name, shots) {
+/** The sheet: rest and answering large, the two thumbnails at their own size beside the themes, then the slider's two ends. With a source, a first row puts the drawing beside rest at the same size. */
+function sheet(name, shots, source = null) {
   const cell = (s, cls = "") => `<figure class="${cls}"><figcaption>${esc(s.label)}</figcaption><img src="data:image/png;base64,${s.png}"></figure>`;
   const by = Object.fromEntries(shots.map((s) => [s.name, s]));
   return `<!doctype html><meta charset="utf-8"><style>
@@ -217,6 +222,7 @@ function sheet(name, shots) {
   img { display: block; width: 100%; outline: 1px solid #c9c9ce; }
   .own img { width: auto; }
 </style><h1>hairline-${esc(name)} · the look</h1>
+${source ? `<div class="row">${cell({ label: `source  ${source.file}`, png: source.png })}${cell({ label: "rest", png: by.rest.png })}</div>` : ""}
 <div class="row">${cell(by.rest)}${cell(by.answer)}</div>
 <div class="row">${cell(by.small, "own")}${cell(by["small-answer"], "own")}${cell(by.dark)}${cell(by.light)}</div>
 <div class="row">${cell(by.low)}${cell(by.high)}</div>`;
@@ -242,8 +248,16 @@ const n0 = (v) => Math.round(v);
 /** The look of one figure (a .js, built here, or a page build.mjs made). Prints as it goes and returns the exit code. */
 export async function look(src, given0 = {}, cwd = process.cwd()) {
   let { answer = null, edge = [] } = given0;
-  const { zoom = null } = given0;
+  const { zoom = null, source = null } = given0;
   if (zoom && !SHOTS.some(([s]) => s === zoom)) { console.error(`look: no shot "${zoom}". The shots: ${SHOTS.map(([s]) => s).join(", ")}.`); return 2; }
+  /* the source is read before anything is built, so a wrong path costs nothing; read.mjs imports this file, so it is imported here, when needed */
+  let sourceXml = null, sourceInfo = null;
+  if (source) {
+    try { sourceXml = readFileSync(source, "utf8"); } catch { console.error(`look: cannot read the source ${resolve(source)}`); return 2; }
+    const { scan } = await import("./read.mjs");
+    sourceInfo = scan(sourceXml, basename(source));
+    if (sourceInfo.error) { console.error(`look: ${sourceInfo.error}`); return 2; }
+  }
 
   // 1. the page, built and validated
   let file, page;
@@ -271,7 +285,7 @@ export async function look(src, given0 = {}, cwd = process.cwd()) {
     console.error('Check the network and run this again, or look without a browser: look.md, "Without a browser".');
     return 2;
   }
-  const browser = await pw.chromium.launch({ channel: "chrome" }).catch(() => pw.chromium.launch()).catch(() => null);
+  const browser = await launch(pw).catch(() => null);
   if (!browser) {
     console.error(`look: no Chrome, and no Chromium of Playwright's. Install one once:\n  node "${pw.cli}" install chromium`);
     console.error('Then run this again. Without a browser, look.md says what to do: "Without a browser".');
@@ -326,12 +340,17 @@ export async function look(src, given0 = {}, cwd = process.cwd()) {
       return png;
     })();
     const shots = await Promise.all(taking), zoomOut = zoom ? await zooming : null;
+    let sourceShot = null;
+    if (sourceXml) {
+      const { snapshot } = await import("./read.mjs");
+      sourceShot = { file: basename(source), png: (await snapshot(browser, sourceXml, sourceInfo.viewBox)).png };
+    }
 
     // 4. the sheet, composed in the browser
     for (const s of shots) s.label = `${s.name}  ${s.query ? "?" + s.query : "(plain)"}  read: ${s.read}${s.box && outside(s.box) ? "  OUT OF FRAME" : ""}`;
     const out = join(cwd, `hairline-${name}-look.png`);
     const board = await (await browser.newContext({ viewport: { width: 1400, height: 800 } })).newPage();
-    await board.setContent(sheet(name, shots));
+    await board.setContent(sheet(name, shots, sourceShot));
     await board.evaluate(() => Promise.all([...document.images].map((i) => i.decode())));
     await board.screenshot({ path: out, fullPage: true });
 
@@ -412,6 +431,7 @@ export async function look(src, given0 = {}, cwd = process.cwd()) {
       console.log(`3 answer: ${faint ? "warn" : "ok"}. At 240px the pointer moves ${n0(share * 100)}% of the ink, the pixels drawn in one small picture and not the other, over those drawn at rest${faint ? `; under ${n0(FAINT * 100)}% the answer is hard to see in a thumbnail. A change of colour moves no ink: make the answer move more, or say why a small one is right` : ""}.`);
     }
 
+    if (sourceShot) console.log(`source ${resolve(source)} is on the sheet beside rest: look.md, item 14.`);
     console.log(`sheet ${out}`);
     console.log(`blind ${blindOut} holds the small and small-answer pictures with the name and the read-out hidden, as someone who has not seen the figure would meet it: for item 1, look at it that way, or show it to such a reader.`);
     if (motionOut) console.log(`motion ${motionOut} is the stage while the answer plays: ${motion.length} pictures, rest first, then each labelled with the ms since the pointer reached the answer point. The sheet shows only pictures that held still, so a part that folds, crosses another part, or jumps between two frames on the way is seen only here: look for one, and fix it in the figure.`);
@@ -429,7 +449,7 @@ export const same = (a, b, platform = process.platform) => platform === "win32" 
 if (process.argv[1] && same(realpathSync(process.argv[1]), realpathSync(here("./look.mjs")))) {
   let args;
   try {
-    args = parseArgs({ allowPositionals: true, options: { answer: { type: "string" }, edge: { type: "string", multiple: true }, zoom: { type: "string" } } });
+    args = parseArgs({ allowPositionals: true, options: { answer: { type: "string" }, edge: { type: "string", multiple: true }, zoom: { type: "string" }, source: { type: "string" } } });
   } catch (e) {
     console.error(`${e.message}\n${USAGE}`);
     process.exit(2);
@@ -441,5 +461,5 @@ if (process.argv[1] && same(realpathSync(process.argv[1]), realpathSync(here("./
     console.error(USAGE);
     process.exit(2);
   }
-  process.exit(await look(src, { answer, edge, zoom: values.zoom ?? null }));
+  process.exit(await look(src, { answer, edge, zoom: values.zoom ?? null, source: values.source ?? null }));
 }

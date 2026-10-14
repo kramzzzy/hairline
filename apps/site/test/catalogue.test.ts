@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ENTRIES, NOTICE, SHELVES, spell, tally } from "@/lib/catalogue";
 import { FIGURES } from "@/lib/figures";
-import { COMMAND, EXAMPLES } from "@/lib/skill";
+import { COMMAND, MARKS } from "@/lib/skill";
 import { REACT, VANILLA, CDN, paste } from "@/lib/snippets";
 
 describe("the catalogue", () => {
@@ -26,7 +26,7 @@ describe("the catalogue", () => {
     for (const f of marks.figures) {
       expect(f.drawn).toBe(false);
       const made = (f as { made?: { file: string; prompt: string } }).made!;
-      const example = EXAMPLES.find((e) => e.file === made.file)!;
+      const example = MARKS.find((e) => e.file === made.file)!;
       expect(made.prompt).toBe(`${COMMAND} ${example.idea}`);
     }
     // each line says what that page's slider does

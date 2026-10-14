@@ -4,6 +4,15 @@ Every release of `@lucasmarkes/hairline`. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [semver](https://semver.org/).
 
+## Unreleased
+
+### Added
+
+- `hairline-adopt`, a skill that reads an existing SVG and hands it to
+  `hairline-create`, which rebuilds it as a figure. `hairline-create` gains
+  step 0, `read.mjs` and `source.md`; `look.mjs --source` puts the SVG beside
+  the rest picture on the sheet.
+
 ## 0.5.0 - 2026-10-08
 
 ### Added

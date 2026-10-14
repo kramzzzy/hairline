@@ -6,7 +6,7 @@ The validator reads text. This is what only eyes can check. Do it every time the
 
 From the person's working directory:
 
-`node <skill folder>/look.mjs <name>.js --answer x,y,z --edge x,y,z`
+`node <skill folder>/look.mjs <name>.js --answer x,y,z --edge x,y,z [--source <file.svg>]`
 
 It builds `hairline-<name>.html` and validates it, as `build.mjs` and `validate.mjs` do. If the validator rejects the page, it prints the lines to fix and stops before opening a browser. Otherwise it opens the eight pictures of the table below at once, in one browser, takes each once its drawing holds still, and writes them, labelled, on one sheet: `hairline-<name>-look.png`. Then it prints one line for each of items 9, 8, 12 and 4, and the sheet's path. It exits 1 when the validator rejects the page or item 9, 8 or 12 fails, and 0 otherwise. Read every line it prints, then read the sheet and answer the rest.
 
@@ -15,6 +15,7 @@ It builds `hairline-<name>.html` and validates it, as `build.mjs` and `validate.
 - Either takes a viewBox point `x,y` instead, used as it is.
 - Without `--answer`, the answering pictures are taken at rest, and it says so. That is not a finished look.
 - `--zoom <shot>` also writes one picture's stage at three times the pixels, as `hairline-<name>-<shot>.png`, for what is too small on the sheet: a crease, a far edge, a dot. The shots are `rest`, `answer`, `small`, `small-answer`, `low`, `high`, `dark` and `light`, in the table's order.
+- `--source <file.svg>`, for a figure made from a drawing the person brought (`source.md`), adds a first row to the sheet: that drawing beside the rest picture, at the same size, labelled `source`. It exits 2, before building anything, when the file cannot be read as an SVG.
 - In place of `<name>.js` it takes a page already built, `hairline-<name>.html`.
 
 A change that moves the fit or the scale moves every `?at=` point with it. The world points stay where they are: give the same ones again and the new `?at=` points come out.
@@ -62,6 +63,7 @@ Answer each with yes or no. A no is fixed in the figure before anything is hande
 11. **No words** (rule 10). Nothing in the drawing is a letter, a digit, an arrow or an icon. In a figure made from a mark, the mark itself and a glyph that is part of it are the exception, and so is a glyph built as a solid that is the figure's whole subject; anything else still fails.
 12. **The page is clean.** No line under the stage reporting an error, and nothing on the console. `look.mjs` reads both, on every picture, and fails on any console error, console warning or page error.
 13. **An empty state says something is missing.** Only for an empty state: in the smallest picture, at rest, with no read-out, can you say what the object would hold and that it holds none?
+14. **Rest still reads as the source.** Only for a figure made from a drawing, with `--source`: side by side, a person who knows the drawing names the figure without being told. Check the proportions `source.md` said must survive, one by one; a part the source has and the rest pose lacks is a no, unless you called it decoration.
 
 If you are unsure whether the figure's weight is right, build an example the same way and put the two side by side: `node <skill folder>/build.mjs <skill folder>/examples/terrain.js`. Or look at it: `node <skill folder>/look.mjs <skill folder>/examples/terrain.js --answer 30,90,0` writes its sheet beside yours.
 
